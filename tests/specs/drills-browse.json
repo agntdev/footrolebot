@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Drills",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Browse short drills (30–120s) by role or skill using inline filters and pagination."
+            }
+          }
+        ],
+        "send": {
+          "callback": "drills:browse"
+        }
+      }
+    ]
+  }
+]
