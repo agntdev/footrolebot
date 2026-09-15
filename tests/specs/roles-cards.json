@@ -1,0 +1,10 @@
+[
+  { "name": "goalkeeper card", "steps": [{ "send": { "callback": "roles:list" }, "expect": [{ "method": "editMessageText" }] }, { "send": { "callback": "role:gk" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "centre-back card", "steps": [{ "send": { "callback": "role:cb" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "full-back card", "steps": [{ "send": { "callback": "role:fb" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "defensive midfielder card", "steps": [{ "send": { "callback": "role:dm" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "central midfielder card", "steps": [{ "send": { "callback": "role:cm" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "winger card", "steps": [{ "send": { "callback": "role:wing" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "attacking midfielder card", "steps": [{ "send": { "callback": "role:am" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "striker card", "steps": [{ "send": { "callback": "role:st" }, "expect": [{ "method": "editMessageText" }] }] }
+]

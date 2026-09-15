@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Begin a free-text question flow. Bot uses ForceReply to capture the user's question."
+              "text": "Send your question in one message and we’ll work through it together."
             }
           }
         ],

@@ -5,10 +5,8 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
-            "payload": {
-              "text": "Open the user's saved explanations and drills; allow removal or export of a single item."
-            }
+            "method": "editMessageText",
+            "payload": { }
           }
         ],
         "send": {

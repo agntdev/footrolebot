@@ -1,24 +1,26 @@
 import { Composer } from "grammy";
 import type { Ctx } from "../bot.js";
+import { getUser } from "../data.js";
 import { mainMenuKeyboard } from "../toolkit/index.js";
 
-// The /start handler renders the bot's MAIN MENU — the primary way users operate
-// a button-first bot. A feature adds its own button by calling
-// `registerMainMenuItem(...)` in its own `src/handlers/<slug>.ts`; this handler
-// renders whatever is registered (plus a Help button), so you do NOT edit this
-// file to add a feature. Send ONE message — no placeholder line above the menu.
 const composer = new Composer<Ctx>();
-
-const WELCOME = "👋 Welcome! Tap a button below to get started.";
+const welcome = {
+  en: "👋 Welcome! Tap a button below to get started.",
+  ru: "👋 Добро пожаловать в FootRoleBot! Выбери тему и развивай свою игру.",
+};
 
 composer.command("start", async (ctx) => {
-  await ctx.reply(WELCOME, { reply_markup: mainMenuKeyboard() });
+  const language = (ctx.from?.language_code ?? "en").toLowerCase().startsWith("ru") ? "ru" : "en";
+  ctx.session.language = language;
+  ctx.session.step = "idle";
+  if (ctx.from) await getUser(ctx.from.id, ctx.from.first_name ?? "Player", language);
+  await ctx.reply(welcome[language], { reply_markup: mainMenuKeyboard() });
 });
 
-// "Back to menu" — re-render the main menu in place from any sub-view.
 composer.callbackQuery("menu:main", async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.editMessageText(WELCOME, { reply_markup: mainMenuKeyboard() });
+  const language = ctx.session.language ?? "ru";
+  await ctx.editMessageText(welcome[language], { reply_markup: mainMenuKeyboard() });
 });
 
 export default composer;
