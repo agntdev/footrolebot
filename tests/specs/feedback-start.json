@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Send a short message to the owner/admin (delivered to ADMIN_CHAT_ID)."
+              "text": "Send a short note and it’ll reach the owner."
             }
           }
         ],

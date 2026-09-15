@@ -5,10 +5,8 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
-            "payload": {
-              "text": "Show seeded list of ~8 common positions as inline keyboard; tap a role to view explanation."
-            }
+            "method": "editMessageText",
+            "payload": { "text": "Pick a position and we’ll break it down simply." }
           }
         ],
         "send": {

@@ -1,17 +1,16 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { drills } from "../content.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Drills", data: "drills:browse" }) if the toolkit exposes it.
+registerMainMenuItem({ label: "🏃 Drills", data: "drills:browse", order: 20 });
+const composer = new Composer<Ctx>();
+function filters(language: "en" | "ru") { return inlineKeyboard([[inlineButton(language === "ru" ? "По позиции" : "By role", "drills:role")], [inlineButton(language === "ru" ? "По навыку" : "By skill", "drills:skill")], [inlineButton(language === "ru" ? "⬅️ Назад" : "⬅️ Back", "menu:main")]]); }
+function list(language: "en" | "ru", items = drills) { return inlineKeyboard([...items.map((d) => [inlineButton(`${d.title} · ${d.duration}s`, `drill:${d.id}`)]), [inlineButton(language === "ru" ? "⬅️ Фильтры" : "⬅️ Filters", "drills:browse")]]); }
 
-const composer = new Composer();
-
-composer.callbackQuery("drills:browse", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Browse short drills (30–120s) by role or skill using inline filters and pagination.");
-});
-
+composer.callbackQuery("drills:browse", async (ctx) => { await ctx.answerCallbackQuery(); const l = ctx.session.language ?? "ru"; await ctx.editMessageText(l === "ru" ? "Выбери фильтр — короткая тренировка найдётся быстро." : "Choose a filter and find a focused little workout.", { reply_markup: filters(l) }); });
+composer.callbackQuery("drills:role", async (ctx) => { await ctx.answerCallbackQuery(); const l = ctx.session.language ?? "ru"; const items = drills.filter((d) => d.roleTags.includes(ctx.session.currentItem?.id ?? "")); await ctx.editMessageText(items.length ? (l === "ru" ? "Тренировки по выбранной позиции:" : "Drills for the selected role:") : (l === "ru" ? "Выбери позицию в разделе ролей, чтобы увидеть подходящие тренировки." : "Pick a role first to see focused drills."), { reply_markup: items.length ? list(l, items) : filters(l) }); });
+composer.callbackQuery("drills:skill", async (ctx) => { await ctx.answerCallbackQuery(); const l = ctx.session.language ?? "ru"; await ctx.editMessageText(l === "ru" ? "Выбери навык:" : "Choose a skill:", { reply_markup: inlineKeyboard([[inlineButton("Passing", "drills:skill:passing"), inlineButton("1v1", "drills:skill:1v1")], [inlineButton("Awareness", "drills:skill:awareness"), inlineButton("Finishing", "drills:skill:finishing")], [inlineButton(l === "ru" ? "⬅️ Фильтры" : "⬅️ Filters", "drills:browse")]]) }); });
+composer.callbackQuery(/^drills:skill:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const l = ctx.session.language ?? "ru"; const items = drills.filter((d) => d.skillTags.includes(ctx.match[1])); await ctx.editMessageText(items.length ? (l === "ru" ? "Вот что можно потренировать:" : "Here are focused drills:") : (l === "ru" ? "Пока нет тренировки для этого навыка." : "There is no drill for that skill yet."), { reply_markup: list(l, items) }); });
+composer.callbackQuery(/^drill:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const d = drills.find((item) => item.id === ctx.match[1]); const l = ctx.session.language ?? "ru"; if (!d) { await ctx.reply(l === "ru" ? "Не нашёл эту тренировку. Открой раздел ещё раз." : "I couldn't find that drill. Open Drills and try again."); return; } ctx.session.currentItem = { type: "drill", id: d.id }; await ctx.editMessageText(`${d.title} · ${d.duration}s\n\n${d.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n\nCoaching note: ${d.notes}`, { reply_markup: inlineKeyboard([[inlineButton(l === "ru" ? "⭐ Сохранить" : "⭐ Save", `save:drill:${d.id}`)], [inlineButton(l === "ru" ? "⬅️ К тренировкам" : "⬅️ Drills", "drills:browse"), inlineButton(l === "ru" ? "Задать вопрос" : "Ask a question", "ask_question:start")]]) }); });
 export default composer;

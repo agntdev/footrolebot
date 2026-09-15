@@ -1,17 +1,14 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { getUser, saveUser } from "../data.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "My saved items", data: "saved:list" }) if the toolkit exposes it.
-
-const composer = new Composer();
-
-composer.callbackQuery("saved:list", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Open the user's saved explanations and drills; allow removal or export of a single item.");
-});
-
+registerMainMenuItem({ label: "⭐ Saved", data: "saved:list", order: 40 });
+const composer = new Composer<Ctx>();
+function l(ctx: Ctx) { return ctx.session.language ?? "ru"; }
+async function render(ctx: Ctx) { const language = l(ctx); const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", language); if (!user.saved.length) { await ctx.editMessageText(language === "ru" ? "Здесь пока пусто — сохрани роль, тренировку или ответ, чтобы вернуться к ним." : "Nothing saved yet — save a role, drill, or answer to find it here.", { reply_markup: inlineKeyboard([[inlineButton(language === "ru" ? "⚽ Роли" : "⚽ Roles", "roles:list"), inlineButton(language === "ru" ? "🏃 Тренировки" : "🏃 Drills", "drills:browse")], [inlineButton(language === "ru" ? "В меню" : "Menu", "menu:main")]]) }); return; } const rows = user.saved.slice(-100).map((item) => [inlineButton(item.title.slice(0, 28), `saved:view:${item.id}`)]); rows.push([inlineButton(language === "ru" ? "В меню" : "Menu", "menu:main")]); await ctx.editMessageText(language === "ru" ? "Твои сохранённые материалы:" : "Your saved items:", { reply_markup: inlineKeyboard(rows) }); }
+composer.callbackQuery("saved:list", async (ctx) => { await ctx.answerCallbackQuery(); await render(ctx); });
+composer.callbackQuery(/^saved:view:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", l(ctx)); const item = user.saved.find((i) => i.id === ctx.match[1]); if (!item) { await ctx.reply(l(ctx) === "ru" ? "Не нашёл этот материал. Открой список ещё раз." : "I couldn't find that item. Open the list again."); return; } await ctx.editMessageText(`${item.title}\n\n${item.snippet}`, { reply_markup: inlineKeyboard([[inlineButton(l(ctx) === "ru" ? "Удалить" : "Remove", `saved:remove:${item.id}`), inlineButton(l(ctx) === "ru" ? "Экспорт" : "Export", `saved:export:${item.id}`)], [inlineButton(l(ctx) === "ru" ? "⬅️ К сохранённым" : "⬅️ Saved", "saved:list")]]) }); });
+composer.callbackQuery(/^saved:remove:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", l(ctx)); const before = user.saved.length; user.saved = user.saved.filter((i) => i.id !== ctx.match[1]); await saveUser(user); await ctx.reply(before === user.saved.length ? (l(ctx) === "ru" ? "Этот материал уже удалён." : "That item is already gone.") : (l(ctx) === "ru" ? "Удалено из сохранённых." : "Removed from your saved items."), { reply_markup: inlineKeyboard([[inlineButton(l(ctx) === "ru" ? "Мои сохранённые" : "My saved items", "saved:list")]]) }); });
+composer.callbackQuery(/^saved:export:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", l(ctx)); const item = user.saved.find((i) => i.id === ctx.match[1]); if (!item) { await ctx.reply(l(ctx) === "ru" ? "Не нашёл этот материал." : "I couldn't find that item."); return; } await ctx.reply(`${item.title}\n${item.snippet}`, { reply_markup: inlineKeyboard([[inlineButton(l(ctx) === "ru" ? "К сохранённым" : "Back to saved", "saved:list")]]) }); });
 export default composer;

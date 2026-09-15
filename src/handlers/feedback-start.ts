@@ -1,17 +1,16 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { addFeedback, getUser, timestamp } from "../data.js";
+import { adminChatId } from "../toolkit/index.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Feedback", data: "feedback:start" }) if the toolkit exposes it.
+registerMainMenuItem({ label: "✉️ Feedback", data: "feedback:start", order: 50 });
+const composer = new Composer<Ctx>();
+const reply = (placeholder: string) => ({ force_reply: true as const, input_field_placeholder: placeholder });
+function l(ctx: Ctx) { return ctx.session.language ?? "en"; }
 
-const composer = new Composer();
-
-composer.callbackQuery("feedback:start", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Send a short message to the owner/admin (delivered to ADMIN_CHAT_ID).");
-});
-
+async function sendAdmin(ctx: Ctx, text: string) { const target = adminChatId(ctx as unknown as { env?: Record<string, unknown> }); if (!target) return false; try { await ctx.api.sendMessage(target, text); return true; } catch { return false; } }
+composer.callbackQuery("feedback:start", async (ctx) => { await ctx.answerCallbackQuery(); ctx.session.step = "awaiting_feedback"; await ctx.reply(l(ctx) === "ru" ? "Напиши короткий отзыв — он попадёт владельцу." : "Send a short note and it’ll reach the owner.", { reply_markup: reply(l(ctx) === "ru" ? "Твой отзыв" : "Your feedback") }); });
+composer.on("message:text", async (ctx, next) => { if (ctx.session.step !== "awaiting_feedback") return next(); const text = ctx.message.text.trim().replace(/[<>]/g, "").slice(0, 1000); if (!text) { await ctx.reply(l(ctx) === "ru" ? "Напиши пару слов, чтобы я мог передать отзыв." : "Write a few words so I can pass the feedback on.", { reply_markup: reply("Your feedback") }); return; } const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", l(ctx)); const sent = await sendAdmin(ctx, `FootRoleBot feedback\nUser: ${user.userId}\nLanguage: ${user.language}\nTime: ${timestamp()}\n\n${text}`); await addFeedback(user, { id: `f-${user.userId}-${timestamp()}`, text, at: timestamp(), sent }); ctx.session.step = "idle"; await ctx.reply(sent ? (l(ctx) === "ru" ? "Спасибо — отзыв доставлен владельцу." : "Thanks — your feedback reached the owner.") : (l(ctx) === "ru" ? "Я сохранил отзыв, но пока не могу доставить его владельцу. Попробуй позже." : "I saved your feedback, but it couldn’t reach the owner yet. Try again later."), { reply_markup: inlineKeyboard([[inlineButton(l(ctx) === "ru" ? "В меню" : "Menu", "menu:main")]]) }); });
+composer.callbackQuery(/^flag:(.+)$/, async (ctx) => { await ctx.answerCallbackQuery(); const id = ctx.match[1]; const user = await getUser(ctx.from?.id ?? 0, ctx.from?.first_name ?? "Player", l(ctx)); const sent = await sendAdmin(ctx, `FootRoleBot flagged question\nUser: ${user.userId}\nLanguage: ${user.language}\nTime: ${timestamp()}\nQuestion: ${ctx.session.currentAnswer?.title ?? "Unavailable"}\nAnswer: ${ctx.session.currentAnswer?.snippet ?? "Unavailable"}`); await addFeedback(user, { id: `flag-${id}`, text: `Flagged question: ${ctx.session.currentAnswer?.title ?? "Unavailable"}`, at: timestamp(), relatedQuestionId: id, sent }); await ctx.reply(sent ? (l(ctx) === "ru" ? "Спасибо, я передал это владельцу." : "Thanks, I passed this to the owner.") : (l(ctx) === "ru" ? "Я сохранил отметку, но владелец пока недоступен." : "I saved the flag, but the owner isn’t reachable yet.")); });
 export default composer;

@@ -1,0 +1,6 @@
+[
+  { "name": "clear question answer", "steps": [{ "send": { "callback": "ask_question:start" }, "expect": [{ "method": "sendMessage" }] }, { "send": { "text": "How can I improve my passing under pressure?" }, "expect": [{ "method": "sendMessage" }] }] },
+  { "name": "ambiguous question asks once", "steps": [{ "send": { "callback": "ask_question:start" }, "expect": [{ "method": "sendMessage" }] }, { "send": { "text": "How do I improve?" }, "expect": [{ "method": "sendMessage" }] }, { "send": { "text": "As a winger" }, "expect": [{ "method": "sendMessage" }] }] },
+  { "name": "drill card", "steps": [{ "send": { "callback": "drill:scan-pass" }, "expect": [{ "method": "editMessageText" }] }] },
+  { "name": "save duplicate is safe", "steps": [{ "send": { "callback": "save:role:gk" }, "expect": [{ "method": "sendMessage" }] }, { "send": { "callback": "save:role:gk" }, "expect": [{ "method": "sendMessage" }] }] }
+]
