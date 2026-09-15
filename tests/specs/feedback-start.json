@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Feedback",
+    "steps": [
+      {
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "Send a short message to the owner/admin (delivered to ADMIN_CHAT_ID)."
+            }
+          }
+        ],
+        "send": {
+          "callback": "feedback:start"
+        }
+      }
+    ]
+  }
+]
